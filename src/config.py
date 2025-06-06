@@ -1,0 +1,89 @@
+import os
+import uuid
+import logging
+
+class MistralConfig:
+    api_key: str = os.getenv("MISTRAL_API_KEY")
+    model: str = "mistral-large-latest"
+    
+class ETLConfig:
+    doc_path: str = os.getenv("DOCUMENTS_PATH")
+
+class LangChainConfig:
+    openai_api_key: str = os.getenv("OPENAI_API_KEY")
+    openai_LLM_model: str = "gpt-4o-mini"
+    model_provider: str = "openai"
+
+class LCQdrantConfig:
+    embedding_model: str = "text-embedding-3-small"
+    model_provider: str = "openai"
+    embedding_size: int = 1536
+    distance: str = "Cosine"
+    collection_name: str = f"Vector_Store{str(uuid.uuid4())[:8]}"
+    qdrant_url: str = os.getenv("QDRANT_URL")
+    qdrant_api_key: str = os.getenv("QDRANT_API_KEY")
+    qdrant_collection_name: str = os.getenv("QDRANT_COLLECTION_NAME")
+    
+
+class AppConfig:
+    environment: str = os.getenv("ENVIRONMENT", "development")
+    max_retries: int = int(os.getenv("MAX_RETRIES", "3"))
+    timeout_seconds: int = int(os.getenv("TIMEOUT_SECONDS", "120"))
+    rate_limit_per_minute: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "60"))
+
+class LoggingConfig:
+    log_level: str = os.getenv("LOG_LEVEL", "INFO")
+    log_file: str = os.getenv("LOG_FILE", "logs/app.log")
+    file_enabled: bool = os.getenv("FILE_ENABLED", "true").lower() == "true"
+    console_enabled: bool = os.getenv("CONSOLE_ENABLED", "true").lower() == "true"
+    log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+class Config:
+    def __init__(self):
+        self.mistral = MistralConfig()
+        self.etl = ETLConfig()
+        self.langchain = LangChainConfig()
+        self.lc_qdrant = LCQdrantConfig()
+        self.app = AppConfig()
+        self.logging = LoggingConfig()
+
+    def _validate_required_configs(self):
+        required_configs = [
+            (self.mistral.api_key, "MISTRAL_API_KEY"),
+            (self.etl.doc_path, "DOCUMENTS_PATH"),
+            (self.langchain.openai_api_key, "OPENAI_API_KEY"),
+            (self.lc_qdrant.qdrant_url, "QDRANT_URL"),
+            (self.lc_qdrant.qdrant_api_key, "QDRANT_API_KEY"),
+            (self.lc_qdrant.qdrant_collection_name, "QDRANT_COLLECTION_NAME"),
+        ]
+
+        missing_configs = [config for config in required_configs if not config[0]]
+
+        if missing_configs:
+            raise ValueError(f"Missing required configurations: {', '.join([config[1] for config in missing_configs])}")
+
+    def _setup_logging(self):
+        logging_config = self.logging
+
+        formatter = logging.Formatter(logging_config.log_format)
+
+        logger = logging.getLogger()
+        logger.setLevel(getattr(logging, logging_config.log_level.upper()))
+        
+        logger.handlers.clear()
+
+        if logging_config.console_enabled:
+            console_handler = logging.StreamHandler()
+            console_handler.setFormatter(formatter)
+            logger.addHandler(console_handler)
+
+        if logging_config.file_enabled:
+            os.makedirs(os.path.dirname(logging_config.log_file), exist_ok=True)
+            file_handler = logging.FileHandler(logging_config.log_file)
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
+
+config = Config()
+config._validate_required_configs()
+config._setup_logging()
+
