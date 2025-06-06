@@ -1,6 +1,7 @@
 import os
 import uuid
 import logging
+from rich.logging import RichHandler
 
 class MistralConfig:
     api_key: str = os.getenv("MISTRAL_API_KEY")
@@ -39,13 +40,18 @@ class LoggingConfig:
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 class Config:
-    def __init__(self):
+    def __init__(self, validate_on_init: bool = False):
         self.mistral = MistralConfig()
         self.etl = ETLConfig()
         self.langchain = LangChainConfig()
         self.lc_qdrant = LCQdrantConfig()
         self.app = AppConfig()
         self.logging = LoggingConfig()
+
+        self._setup_logging()
+
+        if validate_on_init:
+            self._validate_required_configs()
 
     def _validate_required_configs(self):
         required_configs = [
@@ -65,25 +71,33 @@ class Config:
     def _setup_logging(self):
         logging_config = self.logging
 
-        formatter = logging.Formatter(logging_config.log_format)
-
         logger = logging.getLogger()
         logger.setLevel(getattr(logging, logging_config.log_level.upper()))
         
         logger.handlers.clear()
 
         if logging_config.console_enabled:
-            console_handler = logging.StreamHandler()
-            console_handler.setFormatter(formatter)
+            console_handler = RichHandler(
+                show_time=True,
+                show_path=True,
+                enable_link_path=False,
+                rich_tracebacks=True
+            )
+            console_formatter = logging.Formatter(
+                fmt="%(message)s",
+                datefmt="[%X]"
+            )
+            console_handler.setFormatter(console_formatter)
             logger.addHandler(console_handler)
 
         if logging_config.file_enabled:
             os.makedirs(os.path.dirname(logging_config.log_file), exist_ok=True)
             file_handler = logging.FileHandler(logging_config.log_file)
-            file_handler.setFormatter(formatter)
+            file_formatter = logging.Formatter(logging_config.log_format)
+            file_handler.setFormatter(file_formatter)
             logger.addHandler(file_handler)
 
 config = Config()
-config._validate_required_configs()
-config._setup_logging()
+logger = logging.getLogger(__name__)
+
 
