@@ -131,7 +131,5 @@ class DocumentExtractor:
             raise Exception(f"Error encoding document {doc_path}: {e}")
 
 
-document_extractor = DocumentExtractor()
-extracted_docs = document_extractor._extract_documents_content()
 
 
