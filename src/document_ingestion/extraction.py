@@ -121,14 +121,6 @@ class DocumentExtractor:
             logger.error(f"Error extracting content from {doc_path}: {e}")
             raise Exception(f"Error extracting content from {doc_path}: {e}")
 
-    def _encode_document(self, doc_path: str):
-        logger.info(f"Encoding document {doc_path}")
-        try:
-            with open(doc_path, "rb") as doc_file:
-                return base64.b64encode(doc_file.read()).decode('utf-8')
-        except Exception as e:
-            logger.error(f"Error encoding document {doc_path}: {e}")
-            raise Exception(f"Error encoding document {doc_path}: {e}")
 
 
 
