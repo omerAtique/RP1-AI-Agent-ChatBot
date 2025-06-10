@@ -16,6 +16,7 @@ class ETLConfig:
 class LangChainConfig:
     openai_api_key: str = os.getenv("OPENAI_API_KEY")
     openai_LLM_model: str = "gpt-4o-mini"
+    openai_embedding_model: str = "text-embedding-3-small"
     model_provider: str = "openai"
 
 class LCQdrantConfig:
