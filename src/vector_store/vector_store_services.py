@@ -21,17 +21,7 @@ class VectorStoreServices:
 
         self.sparse_embeddings = FastEmbedSparse(model_name="Qdrant/bm25")
 
-        self.vector_store = None
-
-        
-    def create_vector_store(self):
-        logger.info("Creating vector store")
-        try:
-
-            if self.client.collection_exists(config.lc_qdrant.collection_name):
-                logger.info(f"Vector store {config.lc_qdrant.collection_name} already exists")
-                
-                self.vector_store = QdrantVectorStore(  
+        self.vector_store = QdrantVectorStore(  
                     client=self.client,
                     collection_name=config.lc_qdrant.collection_name,
                     embedding=self.dense_embedding,
@@ -40,6 +30,15 @@ class VectorStoreServices:
                     vector_name="dense",
                     sparse_vector_name="sparse"
                 )
+
+        
+    def create_vector_store(self):
+        logger.info("Creating vector store")
+        try:
+
+            if self.client.collection_exists(config.lc_qdrant.collection_name):
+                logger.info(f"Vector store {config.lc_qdrant.collection_name} already exists")
+
                 return True
 
             self.client.create_collection(
@@ -48,16 +47,6 @@ class VectorStoreServices:
                 sparse_vectors_config={
                     "sparse": SparseVectorParams(index=models.SparseIndexParams(on_disk=False))
                 },
-            )
-
-            self.vector_store = QdrantVectorStore(  
-                client=self.client,
-                collection_name=config.lc_qdrant.collection_name,
-                embedding=self.dense_embedding,
-                sparse_embedding=self.sparse_embeddings,
-                retrieval_mode=RetrievalMode.HYBRID,
-                vector_name="dense",
-                sparse_vector_name="sparse"
             )
 
             if self.vector_store.client.collection_exists(config.lc_qdrant.collection_name):

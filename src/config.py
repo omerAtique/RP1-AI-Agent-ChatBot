@@ -5,6 +5,7 @@ import logging
 from rich.logging import RichHandler
 import json
 from pathlib import Path
+from openai import OpenAI
 
 load_dotenv()
 
@@ -135,5 +136,6 @@ class Config:
 
 config = Config()
 logger = logging.getLogger(__name__)
+openai_client = OpenAI(api_key=config.langchain.openai_api_key)
 
 
