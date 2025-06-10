@@ -3,3 +3,6 @@ langchain==0.3.25
 langchain-community==0.3.24
 langgraph==0.4.8
 rich==14.0.0
+logging
+dotenv
+pydantic

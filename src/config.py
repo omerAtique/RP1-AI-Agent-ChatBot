@@ -1,14 +1,17 @@
+from dotenv import load_dotenv
 import os
 import uuid
 import logging
 from rich.logging import RichHandler
+
+load_dotenv()
 
 class MistralConfig:
     api_key: str = os.getenv("MISTRAL_API_KEY")
     model: str = "mistral-large-latest"
     
 class ETLConfig:
-    doc_path: str = os.getenv("DOCUMENTS_PATH")
+    docs_folder_path: str = os.getenv("DOCUMENTS_PATH")
 
 class LangChainConfig:
     openai_api_key: str = os.getenv("OPENAI_API_KEY")
@@ -35,8 +38,9 @@ class AppConfig:
 class LoggingConfig:
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     log_file: str = os.getenv("LOG_FILE", "logs/app.log")
-    file_enabled: bool = os.getenv("FILE_ENABLED", "true").lower() == "true"
-    console_enabled: bool = os.getenv("CONSOLE_ENABLED", "true").lower() == "true"
+    console_enabled: bool = os.getenv("LOG_CONSOLE_ENABLED", "True").lower() == "true"
+    file_enabled: bool = os.getenv("LOG_FILE_ENABLED", "True").lower() == "true"
+   
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 class Config:
@@ -56,7 +60,7 @@ class Config:
     def _validate_required_configs(self):
         required_configs = [
             (self.mistral.api_key, "MISTRAL_API_KEY"),
-            (self.etl.doc_path, "DOCUMENTS_PATH"),
+            (self.etl.docs_folder_path, "DOCUMENTS_PATH"),
             (self.langchain.openai_api_key, "OPENAI_API_KEY"),
             (self.lc_qdrant.qdrant_url, "QDRANT_URL"),
             (self.lc_qdrant.qdrant_api_key, "QDRANT_API_KEY"),
