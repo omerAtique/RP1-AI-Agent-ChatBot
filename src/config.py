@@ -3,6 +3,8 @@ import os
 import uuid
 import logging
 from rich.logging import RichHandler
+import json
+from pathlib import Path
 
 load_dotenv()
 
@@ -24,11 +26,40 @@ class LCQdrantConfig:
     model_provider: str = "openai"
     embedding_size: int = 1536
     distance: str = "Cosine"
-    collection_name: str = f"Vector_Store{str(uuid.uuid4())[:8]}"
-    qdrant_url: str = os.getenv("QDRANT_URL")
-    qdrant_api_key: str = os.getenv("QDRANT_API_KEY")
-    qdrant_collection_name: str = os.getenv("QDRANT_COLLECTION_NAME")
     
+    def __init__(self):
+        self.qdrant_url = os.getenv("QDRANT_URL")
+        self.qdrant_api_key = os.getenv("QDRANT_API_KEY")
+        self.qdrant_collection_name = os.getenv("QDRANT_COLLECTION_NAME")
+        self.input_file_path = os.getenv("INPUT_FILE_PATH")
+        self.collection_name = self._get_or_create_collection_name()
+    
+    def _get_or_create_collection_name(self) -> str:
+        try:
+            input_file_path = Path(self.input_file_path)
+            
+            if input_file_path.exists():
+                try:
+                    with open(input_file_path, 'r') as f:
+                        data = json.load(f)
+                        collection_name = data.get("collection_name", "")
+                        if collection_name and collection_name.strip():
+                            return collection_name
+                except (json.JSONDecodeError, IOError):
+                    # If file exists but can't be read, fall through to create new name
+                    pass
+            
+            # Generate new collection name
+            new_collection_name = f"Vector_Store_{str(uuid.uuid4())[:8]}"
+
+            # update input.json with the new collection name
+            data["collection_name"] = new_collection_name
+            with open(input_file_path, 'w') as f:
+                json.dump(data, f, indent=2)
+            
+            return new_collection_name
+        except Exception as e:
+            raise Exception(f"Error in _get_or_create_collection_name: {e}")
 
 class AppConfig:
     environment: str = os.getenv("ENVIRONMENT", "development")

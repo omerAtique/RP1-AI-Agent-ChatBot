@@ -30,6 +30,16 @@ class VectorStoreServices:
 
             if self.client.collection_exists(config.lc_qdrant.collection_name):
                 logger.info(f"Vector store {config.lc_qdrant.collection_name} already exists")
+                
+                self.vector_store = QdrantVectorStore(  
+                    client=self.client,
+                    collection_name=config.lc_qdrant.collection_name,
+                    embedding=self.dense_embedding,
+                    sparse_embedding=self.sparse_embeddings,
+                    retrieval_mode=RetrievalMode.HYBRID,
+                    vector_name="dense",
+                    sparse_vector_name="sparse"
+                )
                 return True
 
             self.client.create_collection(

@@ -18,7 +18,11 @@ class DocumentIngestionPipeline:
                 logger.warning("No documents extracted")
                 return False
             
-            self.vector_store_services.create_vector_store()
+            created_vector_store = self.vector_store_services.create_vector_store()
+
+            if not created_vector_store:
+                logger.error("Error creating vector store")
+                return False
             
             for extracted_doc in extracted_docs:
                 chunks = self.chunking.split_page(extracted_doc)
