@@ -3,10 +3,12 @@ from mistralai import Mistral
 import os
 import base64
 from pydantic import BaseModel
+from typing import List
 
 class ExtractedDocument(BaseModel):
     fullText: str
     pageNumber: int
+    documentName: str
 
 class DocumentExtractor:
     def __init__(self):
@@ -38,7 +40,7 @@ class DocumentExtractor:
                     logger.warning(f"Skipping file {file} as it is not a PDF or DOCX file")
         
             # split the total documents into batches of 6 documents. Files in 1 batch are processed in parallel with mistral
-            extracted_docs = []
+            extracted_docs: List[List[ExtractedDocument]] = []
             for doc in self.documents:
                 doc_path = os.path.join(self.doc_folder_path, doc)
                 
@@ -51,7 +53,7 @@ class DocumentExtractor:
 
                 extracted_docs.append(extracted_content)
 
-            logger.info(extracted_docs[0])
+            logger.info(f"Extracted {len(extracted_docs)} documents")
 
             return extracted_docs
         except Exception as e:
@@ -85,8 +87,8 @@ class DocumentExtractor:
                     "type": "document_url"
                     },
                 model="mistral-ocr-latest",
-                timeout_ms=12000,
-                retries=3,
+                timeout_ms=60000,  # Increased to 60 seconds
+                retries=2,  # Reduced retries to avoid excessive wait time
                 include_image_base64=True
             )
 
@@ -104,10 +106,11 @@ class DocumentExtractor:
 
             logger.info(f"OCR response recieved successfully")
 
-            structured_content_array = [
+            structured_content_array: List[ExtractedDocument] = [
                 {
                     "fullText": page.markdown,
                     "pageNumber": page.index + 1,
+                    "documentName": doc_path
                 }
                 
                 for page in response.pages
