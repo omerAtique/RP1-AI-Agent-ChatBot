@@ -81,17 +81,62 @@ class VectorStoreServices:
             logger.error(f"Error upserting chunks: {e}")
             raise Exception(f"Error upserting chunks: {e}")
     
-    def retrieve_chunks(self, query: str, k: int = 15):
-        logger.info(f"Retrieving chunks for query: {query}")
+    def retrieve_chunks(self, queries: List[str], k: int = 15):
+        logger.info(f"Retrieving chunks for {len(queries)} queries")
         try:
-            results = self.vector_store.similarity_search(query, k)
+            prefetch_queries = []
+        
+            for query_text in queries:
 
-            if len(results) == 0:
+                dense_embedding = self.dense_embedding.embed_query(query_text)
+                sparse_embedding = self.sparse_embeddings.embed_query(query_text)
+                
+                if hasattr(sparse_embedding, 'indices') and hasattr(sparse_embedding, 'values'):
+                    sparse_query = {
+                        "indices": sparse_embedding.indices,
+                        "values": sparse_embedding.values
+                    }
+                else:
+                    sparse_query = sparse_embedding
+                
+                prefetch_queries.append(
+                    models.Prefetch(
+                        query=dense_embedding,
+                        using="dense",
+                        limit=k,
+                    )
+                )
+                
+                prefetch_queries.append(
+                    models.Prefetch(
+                        query=sparse_query,
+                        using="sparse", 
+                        limit=k,
+                    )
+                )
+
+            results = self.client.query_points(
+                collection_name=config.lc_qdrant.collection_name,
+                prefetch=prefetch_queries,
+                query=models.FusionQuery(fusion=models.Fusion.RRF),
+                limit=k,
+            )
+
+            if len(results.points) == 0:
                 logger.warning("No results found")
                 return []
             else:
-                logger.info(f"Retrieved {len(results)} chunks")
-                return results
+                logger.info(f"Retrieved {len(results.points)} chunks")
+                formatted_chunks = []
+                for point in results.points:
+                    chunk_obj = type('Chunk', (), {
+                        'payload': type('Payload', (), {
+                            'page_content': point.payload.get('page_content', '')
+                        })()
+                    })()
+                    formatted_chunks.append(chunk_obj)
+                
+                return formatted_chunks
         except Exception as e:
             logger.error(f"Error retrieving chunks: {e}")
             raise Exception(f"Error retrieving chunks: {e}")
