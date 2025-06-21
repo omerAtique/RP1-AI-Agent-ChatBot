@@ -4,7 +4,7 @@ from src.config import config, logger
 def main():
     try:
         inference_agent = InferenceAgent()
-        final_response = inference_agent._agentic_flow("Who is John Doe according to context?")
+        final_response = inference_agent._agentic_flow("What is the mentioned venue and jurisdiction?")
         logger.info(f"Final response: {final_response}")
 
     except Exception as e:
