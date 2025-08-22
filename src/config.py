@@ -6,6 +6,7 @@ from rich.logging import RichHandler
 import json
 from pathlib import Path
 from openai import OpenAI
+from supabase import create_client, Client
 
 load_dotenv()
 
@@ -76,6 +77,10 @@ class LoggingConfig:
    
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
+class SupabaseConfig:
+    url: str = os.getenv("SUPABASE_URL")
+    key: str = os.getenv("SUPABASE_KEY")
+
 class Config:
     def __init__(self, validate_on_init: bool = False):
         self.mistral = MistralConfig()
@@ -84,6 +89,7 @@ class Config:
         self.lc_qdrant = LCQdrantConfig()
         self.app = AppConfig()
         self.logging = LoggingConfig()
+        self.supabase = SupabaseConfig()
 
         self._setup_logging()
 
@@ -98,6 +104,8 @@ class Config:
             (self.lc_qdrant.qdrant_url, "QDRANT_URL"),
             (self.lc_qdrant.qdrant_api_key, "QDRANT_API_KEY"),
             (self.lc_qdrant.qdrant_collection_name, "QDRANT_COLLECTION_NAME"),
+            (self.supabase.url, "SUPABASE_URL"),
+            (self.supabase.key, "SUPABASE_KEY"),
         ]
 
         missing_configs = [config for config in required_configs if not config[0]]
@@ -137,5 +145,6 @@ class Config:
 config = Config()
 logger = logging.getLogger(__name__)
 openai_client = OpenAI(api_key=config.langchain.openai_api_key)
+supabase_client = create_client(config.supabase.url, config.supabase.key) 
 
 
